@@ -32,6 +32,7 @@ def clean_data(df):
     df.drop(columns=["categories"], inplace=True)
     df = pd.concat([df,categories], axis=1)
 
+    return df
 
 def save_data(df, database_filename):
     engine = create_engine("sqlite:///"+database_filename)
