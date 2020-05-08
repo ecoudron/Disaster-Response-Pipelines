@@ -1,16 +1,52 @@
 import sys
+import pandas as pd
+from sqlalchemy import create_engine
+
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem.wordnet import WordNetLemmatizer
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.multioutput import MultiOutputClassifier
+
 
 
 def load_data(database_filepath):
-    pass
+    # load data from database
+    engine = create_engine('sqlite:///InsertDatabaseName.db')
+    df = pd.read_sql_table("InsertTableName",engine)
+    X = df.message
+    y = df.iloc[:,4:].values
 
 
 def tokenize(text):
-    pass
+    stop_words = stopwords.words("english")
+    lemmatizer = WordNetLemmatizer()
+    stemmer = PorterStemmer()
+
+    text = re.sub(r"[^a-zA-Z0-9 ]","",text.lower().strip())
+    tokens = word_tokenize(text)
+    tokens2 = [lemmatizer.lemmatize(stemmer.stem(word)) for word in tokens if word not in stop_words]
+    return tokens2
 
 
 def build_model():
-    pass
+
+    rf = MultiOutputClassifier(RandomForestClassifier())
+
+    pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(tokenizer=tokenize)),
+        ("clf",rf)
+    ])
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
@@ -27,13 +63,13 @@ def main():
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
-        
+
         print('Building model...')
         model = build_model()
-        
+
         print('Training model...')
         model.fit(X_train, Y_train)
-        
+
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)
 
